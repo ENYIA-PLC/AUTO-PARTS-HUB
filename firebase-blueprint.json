@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "createdAt": { "type": "number", "format": "timestamp" },
+        "updatedAt": { "type": "number", "format": "timestamp" }
+      },
+      "required": ["userId", "email", "fullName", "createdAt", "updatedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product listed on the marketplace",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "condition": { "type": "string", "enum": ["New", "Used", "Refurbished"] },
+        "image": { "type": "string" },
+        "rating": { "type": "number" },
+        "reviews": { "type": "number" },
+        "createdAt": { "type": "number", "format": "timestamp" },
+        "updatedAt": { "type": "number", "format": "timestamp" }
+      },
+      "required": ["sellerId", "name", "category", "price", "condition", "image", "rating", "reviews", "createdAt", "updatedAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "An order place by a user.",
+      "type": "object",
+      "properties": {
+        "buyerId": { "type": "string" },
+        "productId": { "type": "string" },
+        "price": { "type": "number" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "in_transit", "delivered"] },
+        "createdAt": { "type": "number", "format": "timestamp" },
+        "updatedAt": { "type": "number", "format": "timestamp" }
+      },
+      "required": ["buyerId", "productId", "price", "address", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles."
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Stores products for sale."
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Stores orders."
+    }
+  }
+}
