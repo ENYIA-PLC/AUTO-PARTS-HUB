@@ -3,6 +3,7 @@ import { X, Star, ShoppingCart, ShieldCheck, Truck, ArrowRight, Shield, ChevronR
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../types';
 import { BuyerProtectionModal } from './BuyerProtectionModal';
+import { PartReviews } from './PartReviews';
 
 interface ProductDetailsModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface ProductDetailsModalProps {
 
 export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ isOpen, onClose, product, onCheckout, isWishlisted, onToggleWishlist }) => {
     const [isProtectionModalOpen, setIsProtectionModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
 
     if (!product) return null;
 
@@ -68,58 +70,79 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ isOpen
 
                         {/* Details Section */}
                         <div className="w-full md:w-1/2 flex flex-col h-[calc(100%-16rem)] md:h-full">
-                            <div className="p-6 md:p-8 overflow-y-auto flex-1">
-                                <div className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-2">{product.category}</div>
-                                <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white mb-4 leading-tight">{product.name}</h2>
-                                
-                                <div className="flex items-center gap-4 mb-6 text-sm">
-                                    <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800">
-                                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                        <span className="font-bold text-black dark:text-white">{product.rating}</span>
-                                        <span className="text-zinc-500">({product.reviews} reviews)</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-emerald-500 font-medium">
-                                        <ShieldCheck className="w-4 h-4" />
-                                        Verified Seller
-                                    </div>
-                                </div>
-
-                                <div className="mb-8">
-                                    <h3 className="text-sm font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2">Description</h3>
-                                    <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-sm">
-                                        This high-quality {product.name.toLowerCase()} is perfect for your vehicle. Thoroughly inspected and tested to meet OEM specifications. 
-                                        {product.condition === 'New' ? ' Brand new and never used, comes in original packaging.' : ' Carefully tested to ensure optimal performance.'} 
-                                        Compatible with multiple vehicle models. Ensure you check your vehicle compatibility before purchasing.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-4 mb-6">
-                                    <div 
-                                        onClick={() => setIsProtectionModalOpen(true)}
-                                        className="flex justify-between items-center p-4 bg-zinc-100/50 hover:bg-zinc-100 dark:bg-zinc-900/50 dark:hover:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 cursor-pointer transition-colors group"
-                                    >
-                                        <div className="flex items-center gap-3 text-zinc-700 dark:text-zinc-300">
-                                            <Shield className="w-5 h-5 text-amber-500" />
-                                            <div>
-                                                <div className="font-bold text-sm text-black dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Escrow Protection</div>
-                                                <div className="text-xs text-zinc-500">Money held until delivery</div>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors" />
-                                    </div>
-                                    <div className="flex justify-between items-center p-4 bg-zinc-100/50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                                        <div className="flex items-center gap-3 text-zinc-700 dark:text-zinc-300">
-                                            <Truck className="w-5 h-5 text-blue-500" />
-                                            <div>
-                                                <div className="font-bold text-sm text-black dark:text-white">Nationwide Delivery</div>
-                                                <div className="text-xs text-zinc-500">Ships within 24 hours</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0a0a0a] shrink-0 sticky top-0 z-10">
+                                <button 
+                                    className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'overview' ? 'border-amber-500 text-amber-500' : 'border-transparent text-zinc-500 hover:text-black dark:hover:text-white'}`}
+                                    onClick={() => setActiveTab('overview')}
+                                >
+                                    Overview
+                                </button>
+                                <button 
+                                    className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'reviews' ? 'border-amber-500 text-amber-500' : 'border-transparent text-zinc-500 hover:text-black dark:hover:text-white'}`}
+                                    onClick={() => setActiveTab('reviews')}
+                                >
+                                    Reviews & Ratings
+                                </button>
                             </div>
 
-                            <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#0a0a0a] mt-auto">
+                            {activeTab === 'overview' ? (
+                                <div className="p-6 md:p-8 overflow-y-auto flex-1">
+                                    <div className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-2">{product.category}</div>
+                                    <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white mb-4 leading-tight">{product.name}</h2>
+                                    
+                                    <div className="flex items-center gap-4 mb-6 text-sm">
+                                        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800">
+                                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                            <span className="font-bold text-black dark:text-white">{product.rating}</span>
+                                            <span className="text-zinc-500">({product.reviews} reviews)</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-emerald-500 font-medium">
+                                            <ShieldCheck className="w-4 h-4" />
+                                            Verified Seller
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-8">
+                                        <h3 className="text-sm font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2">Description</h3>
+                                        <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-sm">
+                                            This high-quality {product.name.toLowerCase()} is perfect for your vehicle. Thoroughly inspected and tested to meet OEM specifications. 
+                                            {product.condition === 'New' ? ' Brand new and never used, comes in original packaging.' : ' Carefully tested to ensure optimal performance.'} 
+                                            Compatible with multiple vehicle models. Ensure you check your vehicle compatibility before purchasing.
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-4 mb-6">
+                                        <div 
+                                            onClick={() => setIsProtectionModalOpen(true)}
+                                            className="flex justify-between items-center p-4 bg-zinc-100/50 hover:bg-zinc-100 dark:bg-zinc-900/50 dark:hover:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 cursor-pointer transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-3 text-zinc-700 dark:text-zinc-300">
+                                                <Shield className="w-5 h-5 text-amber-500" />
+                                                <div>
+                                                    <div className="font-bold text-sm text-black dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Escrow Protection</div>
+                                                    <div className="text-xs text-zinc-500">Money held until delivery</div>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors" />
+                                        </div>
+                                        <div className="flex justify-between items-center p-4 bg-zinc-100/50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                            <div className="flex items-center gap-3 text-zinc-700 dark:text-zinc-300">
+                                                <Truck className="w-5 h-5 text-blue-500" />
+                                                <div>
+                                                    <div className="font-bold text-sm text-black dark:text-white">Nationwide Delivery</div>
+                                                    <div className="text-xs text-zinc-500">Ships within 24 hours</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex-1 overflow-y-auto">
+                                    <PartReviews productId={product.id} />
+                                </div>
+                            )}
+
+                            <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#0a0a0a] mt-auto shrink-0">
                                 <div className="flex items-end justify-between mb-4">
                                     <div>
                                         <div className="text-sm text-zinc-500 font-medium mb-1">Total Price</div>

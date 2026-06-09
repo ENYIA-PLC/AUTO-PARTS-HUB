@@ -6,12 +6,13 @@ import { SellerProfile } from './components/SellerProfile';
 import { AddPartModal } from './components/AddPartModal';
 import { DIYHub } from './components/DIYHub';
 import { Mailbox } from './components/Mailbox';
-import { Route, Map as MapIcon, ShoppingBag, PlusCircleIcon, ChevronRight, User, LogOut, Sun, Moon, Settings, Wrench, Mail } from 'lucide-react';
+import { MyGarage } from './components/MyGarage';
+import { Route, Map as MapIcon, ShoppingBag, PlusCircleIcon, ChevronRight, User, LogOut, Sun, Moon, Settings, Wrench, Mail, Car } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
 import { useToast } from './ToastContext';
 
-type TabId = 'marketplace' | 'tracker' | 'seller-profile' | 'diy' | 'mail';
+type TabId = 'marketplace' | 'tracker' | 'seller-profile' | 'diy' | 'mail' | 'garage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('marketplace');
@@ -88,6 +89,16 @@ export default function App() {
                     {accessToken && <span className="absolute -top-1 -right-2 w-2 h-2 bg-amber-500 rounded-full"></span>}
                 </div>
             </button>
+            <button 
+                onClick={() => setActiveTab('garage')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                    activeTab === 'garage' ? 'bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200/50 dark:bg-zinc-800/50'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <Car className="w-4 h-4" /> Garage
+                </div>
+            </button>
           </div>
 
           <div className="flex items-center gap-4">
@@ -129,6 +140,7 @@ export default function App() {
         {activeTab === 'seller-profile' && <SellerProfile />}
         {activeTab === 'diy' && <DIYHub />}
         {activeTab === 'mail' && <Mailbox />}
+        {activeTab === 'garage' && <MyGarage />}
       </main>
       
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
@@ -156,6 +168,10 @@ export default function App() {
         <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'diy' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('diy')}>
             <Wrench className="w-5 h-5" />
             <span className="text-[10px] font-bold">DIY</span>
+        </button>
+        <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'garage' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('garage')}>
+            <Car className="w-5 h-5" />
+            <span className="text-[10px] font-bold">Garage</span>
         </button>
       </div>
     </div>
