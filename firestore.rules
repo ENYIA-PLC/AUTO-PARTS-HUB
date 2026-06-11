@@ -88,5 +88,39 @@ service cloud.firestore {
             incoming().status in ['pending', 'in_transit', 'delivered'] &&
             incoming().updatedAt == request.time;
     }
+    // Vehicle validation
+    function isValidVehicle(data) {
+        return data.keys().hasAll(['userId', 'year', 'make', 'model', 'createdAt', 'updatedAt']) &&
+               data.keys().hasOnly(['userId', 'year', 'make', 'model', 'trim', 'engine', 'isPrimary', 'images', 'videos', 'createdAt', 'updatedAt']) &&
+               data.userId == request.auth.uid &&
+               data.year is string && data.year.size() == 4 && data.year.matches('^[0-9]{4}$') &&
+               data.make is string && data.make.size() <= 50 &&
+               data.model is string && data.model.size() <= 50 &&
+               (!('trim' in data) || (data.trim is string && data.trim.size() <= 50)) &&
+               (!('engine' in data) || (data.engine is string && data.engine.size() <= 50)) &&
+               (!('isPrimary' in data) || data.isPrimary is bool) &&
+               (!('images' in data) || data.images is list) &&
+               (!('videos' in data) || data.videos is list) &&
+               data.createdAt == request.time &&
+               data.updatedAt == request.time;
+    }
+
+    match /users/{userId}/vehicles/{vehicleId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(vehicleId) && userId == request.auth.uid;
+        allow list: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
+        allow create: if isSignedIn() && isValidId(userId) && isValidId(vehicleId) && userId == request.auth.uid && isValidVehicle(incoming());
+        allow update: if isSignedIn() && isValidId(userId) && isValidId(vehicleId) && userId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['year', 'make', 'model', 'trim', 'engine', 'isPrimary', 'images', 'videos', 'updatedAt']) &&
+            incoming().year is string && incoming().year.size() == 4 && incoming().year.matches('^[0-9]{4}$') &&
+            incoming().make is string && incoming().make.size() <= 50 &&
+            incoming().model is string && incoming().model.size() <= 50 &&
+            (!('trim' in incoming()) || (incoming().trim is string && incoming().trim.size() <= 50)) &&
+            (!('engine' in incoming()) || (incoming().engine is string && incoming().engine.size() <= 50)) &&
+            (!('isPrimary' in incoming()) || incoming().isPrimary is bool) &&
+            (!('images' in incoming()) || incoming().images is list) &&
+            (!('videos' in incoming()) || incoming().videos is list) &&
+            incoming().updatedAt == request.time;
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(vehicleId) && userId == request.auth.uid;
+    }
   }
 }

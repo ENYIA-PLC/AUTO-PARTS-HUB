@@ -45,12 +45,33 @@
         "updatedAt": { "type": "number", "format": "timestamp" }
       },
       "required": ["buyerId", "productId", "price", "address", "status", "createdAt", "updatedAt"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A vehicle owned by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "year": { "type": "string" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "trim": { "type": "string" },
+        "engine": { "type": "string" },
+        "isPrimary": { "type": "boolean" },
+        "createdAt": { "type": "number", "format": "timestamp" },
+        "updatedAt": { "type": "number", "format": "timestamp" }
+      },
+      "required": ["userId", "year", "make", "model", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": "User",
       "description": "Stores user profiles."
+    },
+    "users/{userId}/vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Stores user vehicles."
     },
     "products/{productId}": {
       "schema": "Product",

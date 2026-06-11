@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { Car, Plus, Trash2, CheckCircle2, AlertCircle, Wrench, Search, Cog } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Car, Plus, Trash2, CheckCircle2, Search, Cog, Navigation, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { VehicleTrackerModal } from './VehicleTrackerModal';
+import { VehicleMediaModal } from './VehicleMediaModal';
+import { useAuth } from '../AuthContext';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { collection, query, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 
 interface Vehicle {
     id: string;
@@ -10,22 +15,13 @@ interface Vehicle {
     trim?: string;
     engine?: string;
     isPrimary?: boolean;
+    images?: string[];
+    videos?: string[];
 }
 
-const mockVehicles: Vehicle[] = [
-    {
-        id: '1',
-        year: '2019',
-        make: 'Honda',
-        model: 'Civic',
-        trim: 'EX',
-        engine: '1.5L Turbo',
-        isPrimary: true
-    }
-];
-
 export const MyGarage = () => {
-    const [vehicles, setVehicles] = useState<Vehicle[]>(mockVehicles);
+    const { user } = useAuth();
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     
     const [newVehicle, setNewVehicle] = useState({
@@ -36,30 +32,83 @@ export const MyGarage = () => {
         engine: ''
     });
 
-    const handleAddVehicle = (e: React.FormEvent) => {
+    const [selectedVehicleToTrack, setSelectedVehicleToTrack] = useState<Vehicle | null>(null);
+    const [selectedVehicleForMedia, setSelectedVehicleForMedia] = useState<Vehicle | null>(null);
+
+    useEffect(() => {
+        if (!user) {
+            setVehicles([]);
+            return;
+        }
+
+        const path = `users/${user.uid}/vehicles`;
+        const q = query(collection(db, path));
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const loadedVehicles = snapshot.docs.map(d => ({
+                id: d.id,
+                ...d.data()
+            } as Vehicle));
+            loadedVehicles.sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+            setVehicles(loadedVehicles);
+        }, (error) => {
+            handleFirestoreError(error, OperationType.LIST, path);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    const handleAddVehicle = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newVehicle.year || !newVehicle.make || !newVehicle.model) return;
+        if (!newVehicle.year || !newVehicle.make || !newVehicle.model || !user) return;
         
-        const vehicle: Vehicle = {
-            id: Date.now().toString(),
-            ...newVehicle,
-            isPrimary: vehicles.length === 0
-        };
-        
-        setVehicles([vehicle, ...vehicles]);
-        setIsAdding(false);
-        setNewVehicle({ year: '', make: '', model: '', trim: '', engine: '' });
+        try {
+            const isFirst = vehicles.length === 0;
+            const payload = {
+                userId: user.uid,
+                year: newVehicle.year,
+                make: newVehicle.make,
+                model: newVehicle.model,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            };
+            if (newVehicle.trim) (payload as any).trim = newVehicle.trim;
+            if (newVehicle.engine) (payload as any).engine = newVehicle.engine;
+            if (isFirst) (payload as any).isPrimary = true;
+            
+            await addDoc(collection(db, `users/${user.uid}/vehicles`), payload);
+            
+            setIsAdding(false);
+            setNewVehicle({ year: '', make: '', model: '', trim: '', engine: '' });
+        } catch(error) {
+            handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/vehicles`);
+        }
     };
 
-    const removeVehicle = (id: string) => {
-        setVehicles(vehicles.filter(v => v.id !== id));
+    const removeVehicle = async (id: string) => {
+        if (!user) return;
+        try {
+            await deleteDoc(doc(db, `users/${user.uid}/vehicles`, id));
+        } catch(error) {
+            handleFirestoreError(error, OperationType.DELETE, `users/${user.uid}/vehicles/${id}`);
+        }
     };
 
-    const setPrimary = (id: string) => {
-        setVehicles(vehicles.map(v => ({
-            ...v,
-            isPrimary: v.id === id
-        })));
+    const setPrimary = async (id: string) => {
+        if (!user) return;
+        try {
+            const batch = writeBatch(db);
+            vehicles.forEach(v => {
+                const vehicleRef = doc(db, `users/${user.uid}/vehicles`, v.id);
+                batch.update(vehicleRef, {
+                    isPrimary: v.id === id,
+                    updatedAt: Date.now()
+                });
+            });
+            await batch.commit();
+        } catch(error) {
+            handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}/vehicles`);
+        }
     };
 
     return (
@@ -222,7 +271,7 @@ export const MyGarage = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-1 mb-6">
+                            <div className="space-y-1 mb-4">
                                 <p className={`text-sm font-bold ${vehicle.isPrimary ? 'text-zinc-400' : 'text-zinc-500'}`}>{vehicle.year}</p>
                                 <h3 className={`text-2xl font-black ${vehicle.isPrimary ? 'text-white' : 'text-black dark:text-white'}`}>
                                     {vehicle.make} {vehicle.model}
@@ -234,19 +283,72 @@ export const MyGarage = () => {
                                 )}
                             </div>
 
-                            <div className={`pt-4 border-t flex items-center justify-between ${vehicle.isPrimary ? 'border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className={`w-4 h-4 ${vehicle.isPrimary ? 'text-emerald-500' : 'text-emerald-500'}`} />
-                                    <span className={`text-xs font-bold ${vehicle.isPrimary ? 'text-zinc-300' : 'text-zinc-600 dark:text-zinc-400'}`}>Exact Fitment Active</span>
+                            {((vehicle.images && vehicle.images.length > 0) || (vehicle.videos && vehicle.videos.length > 0)) && (
+                                <div className="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                                    {(vehicle.images || []).map((img, i) => (
+                                        <div key={`img-${i}`} className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 cursor-pointer" onClick={() => setSelectedVehicleForMedia(vehicle)}>
+                                            <img src={img} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
+                                    {(vehicle.videos || []).map((vid, i) => (
+                                        <div key={`vid-${i}`} className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-black/10 cursor-pointer relative" onClick={() => setSelectedVehicleForMedia(vehicle)}>
+                                            <video src={vid} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                                <div className="w-5 h-5 bg-black/50 rounded-full flex items-center justify-center">
+                                                    <div className="w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-white ml-0.5" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <button className={`flex items-center gap-1 text-xs font-bold hover:underline ${vehicle.isPrimary ? 'text-amber-500' : 'text-black dark:text-white'}`}>
-                                    Shop Parts <Search className="w-3 h-3" />
+                            )}
+
+                            <div className="mb-6">
+                                <button 
+                                    onClick={() => setSelectedVehicleForMedia(vehicle)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors"
+                                >
+                                    <Image className="w-3.5 h-3.5" />
+                                    Manage Media
                                 </button>
+                            </div>
+
+                            <div className={`pt-4 border-t flex flex-col gap-3 ${vehicle.isPrimary ? 'border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className={`w-4 h-4 ${vehicle.isPrimary ? 'text-emerald-500' : 'text-emerald-500'}`} />
+                                        <span className={`text-xs font-bold ${vehicle.isPrimary ? 'text-zinc-300' : 'text-zinc-600 dark:text-zinc-400'}`}>Exact Fitment Active</span>
+                                    </div>
+                                    <button className={`flex items-center gap-1 text-xs font-bold hover:underline ${vehicle.isPrimary ? 'text-amber-500' : 'text-black dark:text-white'}`}>
+                                        Shop Parts <Search className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                <div className={`flex justify-end pt-3 border-t ${vehicle.isPrimary ? 'border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'} gap-2`}>
+                                    <button 
+                                        onClick={() => setSelectedVehicleToTrack(vehicle)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors"
+                                    >
+                                        <Navigation className="w-3.5 h-3.5 text-emerald-500" />
+                                        Live GPS Track
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     ))}
                 </div>
             )}
+
+            <VehicleTrackerModal 
+                isOpen={!!selectedVehicleToTrack} 
+                onClose={() => setSelectedVehicleToTrack(null)} 
+                vehicleName={selectedVehicleToTrack ? `${selectedVehicleToTrack.year} ${selectedVehicleToTrack.make} ${selectedVehicleToTrack.model}` : ''}
+            />
+
+            <VehicleMediaModal
+                isOpen={!!selectedVehicleForMedia}
+                onClose={() => setSelectedVehicleForMedia(null)}
+                vehicle={selectedVehicleForMedia}
+            />
         </div>
     );
 };

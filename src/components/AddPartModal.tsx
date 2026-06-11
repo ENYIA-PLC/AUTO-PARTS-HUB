@@ -55,15 +55,24 @@ export const AddPartModal: React.FC<AddPartModalProps> = ({ isOpen, onClose }) =
 
                         <div className="overflow-y-auto p-8 scrollbar-hide">
                             <form id="add-part-form" onSubmit={handleSubmit} className="space-y-6">
-                                {/* Image Upload Simulation */}
+                                {/* Image Upload Component */}
                                 <div>
                                     <label className="block text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-2">Item Photos</label>
-                                    <div className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
-                                        <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mb-4">
+                                    <div className="relative border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors overflow-hidden cursor-pointer z-0">
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            multiple 
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            onChange={(e) => {
+                                                // We can handle file select here
+                                            }}
+                                        />
+                                        <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mb-4 relative z-0 pointer-events-none">
                                             <Upload className="w-6 h-6 text-amber-500" />
                                         </div>
-                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Click to upload or drag and drop</p>
-                                        <p className="text-xs text-zinc-500 mt-1">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300 relative z-0 pointer-events-none">Click to upload or drag and drop</p>
+                                        <p className="text-xs text-zinc-500 mt-1 relative z-0 pointer-events-none">SVG, PNG, JPG or GIF (max. 800x400px)</p>
                                     </div>
                                 </div>
 
