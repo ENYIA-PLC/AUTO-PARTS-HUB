@@ -4,7 +4,7 @@ export const phases: RoadmapPhase[] = [
   {
     id: '01',
     title: 'Foundation',
-    timeframe: 'Q1-Q2 2025',
+    timeframe: 'Month 1 (Weeks 1-2)',
     status: 'MVP Shipped',
     items: [
       {
@@ -42,7 +42,7 @@ export const phases: RoadmapPhase[] = [
   {
     id: '02',
     title: 'Growth',
-    timeframe: 'Q3-Q4 2025',
+    timeframe: 'Month 1 (Weeks 3-4)',
     status: 'In Progress',
     items: [
       {
@@ -80,7 +80,7 @@ export const phases: RoadmapPhase[] = [
   {
     id: '03',
     title: 'Scale',
-    timeframe: 'Q1-Q2 2026',
+    timeframe: 'Month 2 (Weeks 1-2)',
     status: 'Planned',
     items: [
       {
@@ -118,7 +118,7 @@ export const phases: RoadmapPhase[] = [
   {
     id: '04',
     title: 'Expansion',
-    timeframe: 'Q3 2026 – 2027',
+    timeframe: 'Month 2 (Weeks 3-4)',
     status: 'Vision',
     items: [
       {

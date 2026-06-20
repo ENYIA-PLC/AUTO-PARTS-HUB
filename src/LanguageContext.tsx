@@ -71,7 +71,8 @@ const translations = {
     ratingLabel: "Rating",
     descriptionLabel: "Description",
     notSpecified: "Not specified",
-    qrScanner: "QR Code Scanner"
+    qrScanner: "QR Code Scanner",
+    interactiveDiagram: "Interactive Vehicle Diagram"
   },
   ig: {
     market: 'Ahịa',

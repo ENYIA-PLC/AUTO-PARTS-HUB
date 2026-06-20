@@ -10,14 +10,15 @@ import { MyGarage } from './components/MyGarage';
 import { WishlistModal } from './components/WishlistModal';
 import { MechanicsGrid } from './components/MechanicsGrid';
 import { OrderHistory } from './components/OrderHistory';
-import { Route, Map as MapIcon, ShoppingBag, PlusCircleIcon, ChevronRight, User, LogOut, Sun, Moon, Settings, Wrench, Mail, Car, Globe, Heart, Users, ClipboardList, QrCode } from 'lucide-react';
+import { Route, Map as MapIcon, ShoppingBag, PlusCircleIcon, ChevronRight, User, LogOut, Sun, Moon, Settings, Wrench, Mail, Car, Globe, Heart, Users, ClipboardList, QrCode, Frame } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
 import { useToast } from './ToastContext';
 import { useLanguage } from './LanguageContext';
 import { QRCodeScannerModal } from './components/QRCodeScannerModal';
+import { InteractiveVehicleDiagram } from './components/InteractiveVehicleDiagram';
 
-type TabId = 'marketplace' | 'tracker' | 'seller-profile' | 'diy' | 'mail' | 'garage' | 'wishlist' | 'mechanics' | 'orders';
+type TabId = 'marketplace' | 'tracker' | 'seller-profile' | 'diy' | 'mail' | 'garage' | 'wishlist' | 'mechanics' | 'orders' | 'diagram';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('marketplace');
@@ -117,6 +118,16 @@ export default function App() {
                 </div>
             </button>
             <button 
+                onClick={() => setActiveTab('diagram')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all hidden xl:block ${
+                    activeTab === 'diagram' ? 'bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <Frame className="w-4 h-4" /> Diagram
+                </div>
+            </button>
+            <button 
                 onClick={() => setActiveTab('mechanics')}
                 className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all hidden lg:block ${
                     activeTab === 'mechanics' ? 'bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50'
@@ -193,6 +204,7 @@ export default function App() {
         {activeTab === 'wishlist' && <WishlistModal />}
         {activeTab === 'mechanics' && <MechanicsGrid />}
         {activeTab === 'orders' && <OrderHistory />}
+        {activeTab === 'diagram' && <InteractiveVehicleDiagram />}
       </main>
       
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
