@@ -6,6 +6,7 @@ import { VehicleMediaModal } from './VehicleMediaModal';
 import { useAuth } from '../AuthContext';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { useLanguage } from '../LanguageContext';
 
 interface Vehicle {
     id: string;
@@ -34,6 +35,7 @@ export const MyGarage = () => {
 
     const [selectedVehicleToTrack, setSelectedVehicleToTrack] = useState<Vehicle | null>(null);
     const [selectedVehicleForMedia, setSelectedVehicleForMedia] = useState<Vehicle | null>(null);
+    const { t } = useLanguage();
 
     useEffect(() => {
         if (!user) {
@@ -119,10 +121,10 @@ export const MyGarage = () => {
                         <span className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-black shadow-lg">
                             <Car className="w-6 h-6" />
                         </span>
-                        My Garage
+                        {t('myGarage')}
                     </h1>
                     <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl text-lg">
-                        Manage your vehicles to ensure perfect fitment. We'll automatically filter parts that fit your primary vehicle.
+                        {t('manageVehicles')}
                     </p>
                 </div>
                 
@@ -131,7 +133,7 @@ export const MyGarage = () => {
                     className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl flex items-center gap-2 justify-center transition-transform hover:scale-105 active:scale-95"
                 >
                     <Plus className="w-5 h-5" />
-                    {isAdding ? 'Cancel' : 'Add Vehicle'}
+                    {isAdding ? t('cancel') : t('addVehicle')}
                 </button>
             </div>
 
@@ -219,13 +221,13 @@ export const MyGarage = () => {
                     <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6">
                         <Car className="w-10 h-10 text-zinc-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-black dark:text-white mb-2">Your garage is empty</h2>
-                    <p className="text-zinc-500 max-w-md mb-8">Add your first vehicle to get exact fitment data for parts across the marketplace.</p>
+                    <h2 className="text-xl font-bold text-black dark:text-white mb-2">{t('noVehicles')}</h2>
+                    <p className="text-zinc-500 max-w-md mb-8">{t('manageVehicles')}</p>
                     <button 
                         onClick={() => setIsAdding(true)}
                         className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl transition-colors"
                     >
-                        Add a Vehicle
+                        {t('addVehicle')}
                     </button>
                 </div>
             ) : (
@@ -245,7 +247,7 @@ export const MyGarage = () => {
                             {vehicle.isPrimary && (
                                 <div className="absolute -top-3 -right-3 px-4 py-1 bg-amber-500 text-black text-xs font-bold uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3" />
-                                    Primary
+                                    {t('primary')}
                                 </div>
                             )}
                             

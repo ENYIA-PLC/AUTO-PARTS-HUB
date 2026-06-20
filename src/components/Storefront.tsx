@@ -7,6 +7,7 @@ import { CheckoutModal } from './CheckoutModal';
 import { ProductDetailsModal } from './ProductDetailsModal';
 import { CompareModal } from './CompareModal';
 import { useToast } from '../ToastContext';
+import { useLanguage } from '../LanguageContext';
 
 export const Storefront = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +19,7 @@ export const Storefront = () => {
     const [compareList, setCompareList] = useState<Product[]>([]);
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     const { addToast } = useToast();
+    const { t } = useLanguage();
 
     const filteredProducts = mockProducts.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -34,15 +36,15 @@ export const Storefront = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-4xl md:text-6xl font-black text-black dark:text-white mb-6 tracking-tight"
                 >
-                    Nigeria's #1 <br />
+                    {t('nigeriaNumberOne')} <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-                        Auto Parts Marketplace
+                        {t('autoPartsMarketplace')}
                     </span>
                 </motion.h1>
                 <div className="flex flex-wrap justify-center gap-4 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                    <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-emerald-500"/> Escrow Protected</span>
-                    <span className="flex items-center gap-1"><Package className="w-4 h-4 text-amber-500"/> 50k+ Listings</span>
-                    <span className="flex items-center gap-1"><Map className="w-4 h-4 text-blue-500"/> Live Order Tracking</span>
+                    <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-emerald-500"/> {t('escrowProtected')}</span>
+                    <span className="flex items-center gap-1"><Package className="w-4 h-4 text-amber-500"/> {t('listingsCount')}</span>
+                    <span className="flex items-center gap-1"><Map className="w-4 h-4 text-blue-500"/> {t('liveTracking')}</span>
                 </div>
             </div>
 
@@ -53,7 +55,7 @@ export const Storefront = () => {
                     className="mb-8 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4"
                 >
                     <div>
-                        <h4 className="font-bold text-emerald-400">Order successfully placed!</h4>
+                        <h4 className="font-bold text-emerald-400">{t('orderSuccess')}</h4>
                         <p className="text-sm text-zinc-600 dark:text-zinc-400">Your mock transaction has been recorded.</p>
                     </div>
                     <a 
@@ -63,7 +65,7 @@ export const Storefront = () => {
                         className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-black font-bold rounded-xl transition-colors whitespace-nowrap text-center"
                         onClick={() => setPaymentLink(null)}
                     >
-                        View Receipt
+                        {t('viewReceipt')}
                     </a>
                 </motion.div>
             )}
@@ -75,14 +77,14 @@ export const Storefront = () => {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                         <input 
                             type="text" 
-                            placeholder="Search for parts (e.g. Brake Pads, Alternator)..."
+                            placeholder={t('searchPlaceholder')}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full h-14 pl-12 pr-4 bg-white dark:bg-[#141414] border border-zinc-300/50 dark:border-zinc-700/50 rounded-2xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all font-medium"
                         />
                     </div>
                     <button className="h-14 px-6 flex items-center justify-center gap-2 bg-white dark:bg-[#141414] border border-zinc-300/50 dark:border-zinc-700/50 rounded-2xl text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-semibold">
                         <Filter className="w-5 h-5" />
-                        Filters
+                        {t('filters')}
                     </button>
                 </div>
                 
@@ -97,7 +99,7 @@ export const Storefront = () => {
                                 : 'bg-white dark:bg-[#141414] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-800/50'
                             }`}
                         >
-                            All Parts
+                            {t('allParts')}
                         </button>
                         {categories.map(category => (
                             <button 
@@ -136,7 +138,7 @@ export const Storefront = () => {
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md ${
                                     product.condition === 'New' ? 'bg-emerald-500/90 text-black' : 'bg-zinc-200/90 dark:bg-zinc-800/90 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700'
                                 }`}>
-                                    {product.condition}
+                                    {product.condition === 'New' ? t('conditionNew') : t('conditionUsed')}
                                 </span>
                                 {product.conditionGrade && (
                                     <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-amber-500/90 text-black">
@@ -163,13 +165,13 @@ export const Storefront = () => {
                             </button>
                         </div>
                         <div className="p-6">
-                            <div className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-2">{product.category}</div>
+                            <div className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-2">{t(product.category.toLowerCase() as any) || product.category}</div>
                             <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 line-clamp-1">{product.name}</h3>
                             
                             <div className="flex items-center gap-1 mb-6 text-sm text-zinc-500">
                                 <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                                 <span className="font-medium text-zinc-800 dark:text-zinc-200">{product.rating}</span>
-                                <span>({product.reviews} reviews)</span>
+                                <span>({product.reviews} {t('reviews')})</span>
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -214,7 +216,7 @@ export const Storefront = () => {
             {filteredProducts.length === 0 && (
                 <div className="text-center py-20 text-zinc-500">
                     <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg">No parts found matching your criteria</p>
+                    <p className="text-lg">{t('noPartsFound')}</p>
                 </div>
             )}
 
@@ -228,20 +230,20 @@ export const Storefront = () => {
                         <div className="w-8 h-8 rounded-full bg-amber-500 text-black font-black flex flex-col items-center justify-center text-sm">
                             {compareList.length}
                         </div>
-                        <span className="text-white font-medium text-sm hidden md:inline">Parts Selected</span>
+                        <span className="text-white font-medium text-sm hidden md:inline">{t('partsSelected')}</span>
                     </div>
                     <div className="flex gap-3">
                         <button 
                             onClick={() => setIsCompareModalOpen(true)}
                             className="bg-amber-500 hover:bg-amber-600 text-black px-6 py-2 rounded-full font-bold text-sm transition-colors"
                         >
-                            Compare Details
+                            {t('compareDetails')}
                         </button>
                         <button 
                             onClick={() => setCompareList([])}
                             className="text-zinc-400 hover:text-white px-3 text-sm transition-colors"
                         >
-                            Clear
+                            {t('clear')}
                         </button>
                     </div>
                 </motion.div>

@@ -7,20 +7,27 @@ import { AddPartModal } from './components/AddPartModal';
 import { DIYHub } from './components/DIYHub';
 import { Mailbox } from './components/Mailbox';
 import { MyGarage } from './components/MyGarage';
-import { Route, Map as MapIcon, ShoppingBag, PlusCircleIcon, ChevronRight, User, LogOut, Sun, Moon, Settings, Wrench, Mail, Car } from 'lucide-react';
+import { WishlistModal } from './components/WishlistModal';
+import { MechanicsGrid } from './components/MechanicsGrid';
+import { OrderHistory } from './components/OrderHistory';
+import { Route, Map as MapIcon, ShoppingBag, PlusCircleIcon, ChevronRight, User, LogOut, Sun, Moon, Settings, Wrench, Mail, Car, Globe, Heart, Users, ClipboardList, QrCode } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
 import { useToast } from './ToastContext';
+import { useLanguage } from './LanguageContext';
+import { QRCodeScannerModal } from './components/QRCodeScannerModal';
 
-type TabId = 'marketplace' | 'tracker' | 'seller-profile' | 'diy' | 'mail' | 'garage';
+type TabId = 'marketplace' | 'tracker' | 'seller-profile' | 'diy' | 'mail' | 'garage' | 'wishlist' | 'mechanics' | 'orders';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('marketplace');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAddPartOpen, setIsAddPartOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const { user, accessToken, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
+  const { language, toggleLanguage, t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-800 dark:text-zinc-200 font-sans selection:bg-amber-500/30 selection:text-amber-200">
@@ -45,7 +52,7 @@ export default function App() {
                 }`}
             >
                 <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4" /> Market
+                    <ShoppingBag className="w-4 h-4" /> {t('market')}
                 </div>
             </button>
             <button 
@@ -55,7 +62,7 @@ export default function App() {
                 }`}
             >
                 <div className="flex items-center gap-2">
-                    <MapIcon className="w-4 h-4" /> Tracker
+                    <MapIcon className="w-4 h-4" /> {t('tracker')}
                 </div>
             </button>
             <button 
@@ -65,7 +72,7 @@ export default function App() {
                 }`}
             >
                 <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" /> Sellers
+                    <User className="w-4 h-4" /> {t('sellers')}
                 </div>
             </button>
             <button 
@@ -75,7 +82,7 @@ export default function App() {
                 }`}
             >
                 <div className="flex items-center gap-2">
-                    <Wrench className="w-4 h-4" /> DIY Hub
+                    <Wrench className="w-4 h-4" /> {t('diyHub')}
                 </div>
             </button>
             <button 
@@ -85,7 +92,7 @@ export default function App() {
                 }`}
             >
                 <div className="flex items-center gap-2 relative">
-                    <Mail className="w-4 h-4" /> Inbox
+                    <Mail className="w-4 h-4" /> {t('inbox')}
                     {accessToken && <span className="absolute -top-1 -right-2 w-2 h-2 bg-amber-500 rounded-full"></span>}
                 </div>
             </button>
@@ -96,12 +103,54 @@ export default function App() {
                 }`}
             >
                 <div className="flex items-center gap-2">
-                    <Car className="w-4 h-4" /> Garage
+                    <Car className="w-4 h-4" /> {t('garage')}
+                </div>
+            </button>
+            <button 
+                onClick={() => setActiveTab('orders')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                    activeTab === 'orders' ? 'bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4" /> {t('orders')}
+                </div>
+            </button>
+            <button 
+                onClick={() => setActiveTab('mechanics')}
+                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all hidden lg:block ${
+                    activeTab === 'mechanics' ? 'bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" /> {t('mechanics')}
                 </div>
             </button>
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+                onClick={() => setActiveTab('wishlist')}
+                className="flex items-center justify-center w-10 h-10 rounded-full text-zinc-500 hover:text-amber-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Wishlist"
+            >
+                <Heart className={`w-5 h-5 ${activeTab === 'wishlist' ? 'fill-amber-500 text-amber-500' : ''}`} />
+            </button>
+            <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-1.5 p-2 rounded-full text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-xs font-bold"
+                aria-label="Toggle language"
+            >
+                <Globe className="w-4 h-4" />
+                <span className="uppercase">{language}</span>
+            </button>
+            <button
+                onClick={() => setIsScannerOpen(true)}
+                className="flex items-center justify-center w-10 h-10 rounded-full text-zinc-500 hover:text-amber-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Scan QR Code"
+            >
+                <QrCode className="w-5 h-5" />
+            </button>
             <button
                 onClick={toggleTheme}
                 className="p-2 rounded-full text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
@@ -114,7 +163,7 @@ export default function App() {
                 className="hidden sm:flex items-center gap-2 text-sm font-bold text-amber-500 hover:bg-amber-500/10 px-4 py-2 rounded-full transition-colors border border-amber-500/20"
             >
                 <PlusCircleIcon className="w-4 h-4" />
-                Sell a Part
+                {t('sellAPart')}
             </button>
             {user ? (
                 <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full pl-2 pr-4 py-1">
@@ -126,7 +175,7 @@ export default function App() {
                 </div>
             ) : (
                 <button onClick={() => setIsAuthOpen(true)} className="bg-black text-white dark:bg-white dark:text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-zinc-200 transition-colors shadow-lg">
-                    Sign In
+                    {t('signIn')}
                 </button>
             )}
           </div>
@@ -141,37 +190,41 @@ export default function App() {
         {activeTab === 'diy' && <DIYHub />}
         {activeTab === 'mail' && <Mailbox />}
         {activeTab === 'garage' && <MyGarage />}
+        {activeTab === 'wishlist' && <WishlistModal />}
+        {activeTab === 'mechanics' && <MechanicsGrid />}
+        {activeTab === 'orders' && <OrderHistory />}
       </main>
       
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <AddPartModal isOpen={isAddPartOpen} onClose={() => setIsAddPartOpen(false)} />
+      <QRCodeScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
 
       {/* Footer minimal */}
       <footer className="py-8 border-t border-zinc-200 dark:border-zinc-900 bg-zinc-100 dark:bg-[#060606] text-zinc-500 text-center text-sm">
-        <p>© 2025 PartsHub Marketplace. Confidential Roadmap Phase 1 Shipped.</p>
+        <p>{t('footer' as any) || '© 2025 PartsHub Marketplace. Confidential Roadmap Phase 1 Shipped.'}</p>
       </footer>
       
       {/* Mobile Nav Bar (bottom) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-zinc-50 dark:bg-[#0a0a0a]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-900 flex justify-around items-center px-4 z-50">
         <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'marketplace' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('marketplace')}>
             <ShoppingBag className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Shop</span>
+            <span className="text-[10px] font-bold">{t('shop')}</span>
         </button>
         <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'tracker' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('tracker')}>
             <MapIcon className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Track</span>
+            <span className="text-[10px] font-bold">{t('track')}</span>
         </button>
         <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'mail' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('mail')}>
             <Mail className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Inbox</span>
+            <span className="text-[10px] font-bold">{t('inbox')}</span>
         </button>
         <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'diy' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('diy')}>
             <Wrench className="w-5 h-5" />
-            <span className="text-[10px] font-bold">DIY</span>
+            <span className="text-[10px] font-bold">{t('diy')}</span>
         </button>
         <button className={`p-2 flex flex-col items-center gap-1 ${activeTab === 'garage' ? 'text-amber-500' : 'text-zinc-500'}`} onClick={() => setActiveTab('garage')}>
             <Car className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Garage</span>
+            <span className="text-[10px] font-bold">{t('garage')}</span>
         </button>
       </div>
     </div>

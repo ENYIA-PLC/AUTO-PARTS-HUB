@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Star, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../types';
+import { useLanguage } from '../LanguageContext';
 
 interface CompareModalProps {
     isOpen: boolean;
@@ -10,6 +11,8 @@ interface CompareModalProps {
 }
 
 export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, products }) => {
+    const { t } = useLanguage();
+    
     if (!isOpen || products.length === 0) return null;
 
     return (
@@ -34,7 +37,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, pro
                             <span className="w-8 h-8 rounded bg-amber-500/10 text-amber-500 flex items-center justify-center">
                                 <ShieldCheck className="w-5 h-5" />
                             </span>
-                            Compare Parts
+                            {t('compareParts')}
                         </h2>
                         <button 
                             onClick={onClose}
@@ -56,7 +59,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, pro
                                         />
                                     </div>
                                     <div className="p-5 flex-1 flex flex-col">
-                                        <div className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-1">{product.category}</div>
+                                        <div className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-1">{t(product.category.toLowerCase() as any) || product.category}</div>
                                         <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4 line-clamp-2 min-h-[3.5rem]">{product.name}</h3>
                                         
                                         <div className="text-2xl font-black text-black dark:text-white mb-6">
@@ -65,33 +68,33 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, pro
 
                                         <div className="space-y-4 flex-1">
                                             <div>
-                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Condition</div>
+                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">{t('conditionLabel')}</div>
                                                 <div className="font-medium text-black dark:text-white">
                                                     <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
                                                         product.condition === 'New' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200'
                                                     }`}>
-                                                        {product.condition}
+                                                        {product.condition === 'New' ? t('conditionNew') : t('conditionUsed')}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Grade / Quality</div>
+                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">{t('gradeQuality')}</div>
                                                 <div className="font-medium text-black dark:text-white">
-                                                    {product.conditionGrade || <span className="text-zinc-400 italic">Not specified</span>}
+                                                    {product.conditionGrade || <span className="text-zinc-400 italic">{t('notSpecified')}</span>}
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Rating</div>
+                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">{t('ratingLabel')}</div>
                                                 <div className="flex items-center gap-1 font-medium text-black dark:text-white">
                                                     <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                                    {product.rating} <span className="text-zinc-500 text-xs font-normal">({product.reviews} reviews)</span>
+                                                    {product.rating} <span className="text-zinc-500 text-xs font-normal">({product.reviews} {t('reviews')})</span>
                                                 </div>
                                             </div>
                                             
                                             <div>
-                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Description</div>
+                                                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">{t('descriptionLabel')}</div>
                                                 <div className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
                                                     {product.description}
                                                 </div>
