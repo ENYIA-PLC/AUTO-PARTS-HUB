@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Filter, ShoppingCart, Star, Package, Clock, ShieldCheck, Map, Heart, Scale } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, ShoppingCart, Star, Package, Clock, ShieldCheck, Map, Heart, Scale, WifiOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { categories, mockProducts } from '../data';
 import { Product } from '../types';
@@ -18,10 +18,49 @@ export const Storefront = () => {
     const [wishlist, setWishlist] = useState<Set<string>>(new Set());
     const [compareList, setCompareList] = useState<Product[]>([]);
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const { addToast } = useToast();
     const { t } = useLanguage();
 
-    const filteredProducts = mockProducts.filter(p => {
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOffline(false);
+            setProducts(mockProducts);
+            localStorage.setItem('storefront_parts_cache', JSON.stringify(mockProducts));
+            addToast('Back online. Parts updated.', 'success');
+        };
+        
+        const handleOffline = () => {
+            setIsOffline(true);
+            addToast('You are offline. Viewing cached parts.', 'info');
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        const cached = localStorage.getItem('storefront_parts_cache');
+        
+        if (navigator.onLine) {
+            setProducts(mockProducts);
+            localStorage.setItem('storefront_parts_cache', JSON.stringify(mockProducts));
+        } else if (cached) {
+            try {
+                setProducts(JSON.parse(cached));
+            } catch (e) {
+                setProducts(mockProducts);
+            }
+        } else {
+            setProducts(mockProducts);
+        }
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = activeCategory ? p.category === activeCategory : true;
         return matchesSearch && matchesCategory;
@@ -29,6 +68,13 @@ export const Storefront = () => {
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 py-8">
+            {isOffline && (
+                <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400 font-medium text-sm">
+                    <WifiOff className="w-4 h-4" />
+                    You are offline. Viewing cached parts.
+                </div>
+            )}
+
             {/* Hero / Vision statement */}
             <div className="text-center mb-8 py-16 px-4 bg-gradient-to-b from-[#141414] to-transparent rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50">
                 <motion.h1 
