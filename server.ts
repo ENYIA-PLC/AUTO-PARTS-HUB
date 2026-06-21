@@ -58,6 +58,104 @@ async function startServer() {
     res.json({ status: "ok", message: "Node.js backend is running alongside Firebase!" });
   });
 
+  // Get all products
+  app.get("/api/products", async (req, res) => {
+    try {
+      const db = admin.firestore();
+      const snapshot = await db.collection("products").get();
+      const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json({ success: true, products });
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch products" });
+    }
+  });
+
+  // Get product by ID
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection("products").doc(req.params.id).get();
+      if (!doc.exists) {
+        res.status(404).json({ success: false, error: "Product not found" });
+        return;
+      }
+      res.json({ success: true, product: { id: doc.id, ...doc.data() } });
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch product" });
+    }
+  });
+
+  // Add a new product (Secure route)
+  app.post("/api/products", verifyToken, async (req, res) => {
+    try {
+      const db = admin.firestore();
+      const user = (req as any).user;
+      
+      const newProduct = {
+        ...req.body,
+        sellerId: user.uid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      
+      const docRef = await db.collection("products").add(newProduct);
+      res.status(201).json({ success: true, product: { id: docRef.id, ...newProduct } });
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ success: false, error: "Failed to create product" });
+    }
+  });
+
+  // Create a new order (Secure route)
+  app.post("/api/orders", verifyToken, async (req, res) => {
+    try {
+      const db = admin.firestore();
+      const user = (req as any).user;
+      
+      const { items, total, shippingAddress } = req.body;
+      
+      if (!items || !items.length) {
+         res.status(400).json({ success: false, error: "Order must contain items" });
+         return;
+      }
+
+      const newOrder = {
+        userId: user.uid,
+        items,
+        total,
+        shippingAddress,
+        status: "Processing",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      
+      const docRef = await db.collection("orders").add(newOrder);
+      res.status(201).json({ success: true, order: { id: docRef.id, ...newOrder } });
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ success: false, error: "Failed to create order" });
+    }
+  });
+
+  // Get user's orders (Secure route)
+  app.get("/api/orders", verifyToken, async (req, res) => {
+    try {
+      const db = admin.firestore();
+      const user = (req as any).user;
+      
+      const snapshot = await db.collection("orders")
+        .where("userId", "==", user.uid)
+        .orderBy("createdAt", "desc")
+        .get();
+        
+      const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json({ success: true, orders });
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch orders" });
+    }
+  });
+
   // Example API route to handle secure operations
   app.post("/api/verify-trade", verifyToken, async (req, res) => {
     // This is where you would put secure logic that shouldn't be exposed to the client
