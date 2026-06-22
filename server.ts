@@ -3,6 +3,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import * as admin from "firebase-admin";
 import fs from "fs";
+import { Server } from "socket.io";
+import * as http from "http";
 
 // Initialize Firebase Admin
 try {
@@ -47,6 +49,17 @@ const verifyToken = async (req: express.Request, res: express.Response, next: ex
 
 async function startServer() {
   const app = express();
+  const server = http.createServer(app);
+  const io = new Server(server, { cors: { origin: "*" } });
+
+  io.on("connection", (socket) => {
+    socket.on("join-tracking", (trackingId) => {
+      socket.join(`tracking_${trackingId}`);
+      console.log(`Socket ${socket.id} joined tracking room: tracking_${trackingId}`);
+    });
+    socket.on("disconnect", () => {});
+  });
+
   const PORT = 3000;
 
   // For JSON parsing
@@ -178,6 +191,78 @@ async function startServer() {
     });
   });
 
+  // --- Live Location Tracker Features --- //
+
+  // 1. WebSocket / REST hybrid for live location updates from courier
+  app.post("/api/tracking/:orderId/location", verifyToken, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { lat, lng, speed, status } = req.body;
+      const db = admin.firestore();
+
+      // Simple mock ETA calculation. Real app would use Google Maps Routes API.
+      const etaMins = Math.max(1, Math.floor(Math.random() * 20) + 5); 
+
+      const payload = {
+        lat, 
+        lng, 
+        speed: speed || 0, 
+        status: status || 'In Transit', 
+        etaMins, 
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      // Ensure tracking document exists and is updated
+      const orderRef = db.collection("orders").doc(orderId);
+      const trackingHistoryRef = orderRef.collection("tracking_history");
+      
+      await trackingHistoryRef.add(payload);
+      
+      const payloadString = { ...payload, timestamp: new Date().toISOString() };
+      await orderRef.update({ currentLocation: payloadString }).catch(() => {}); // ignore error if not found 
+
+      // Broadcast real-time location via Socket.IO
+      io.to(`tracking_${orderId}`).emit("location_update", payloadString);
+
+      res.json({ success: true, message: "Location broadcasted", payload: payloadString });
+    } catch (error) {
+      console.error("Location update err:", error);
+      res.status(500).json({ success: false, error: "Failed to update location" });
+    }
+  });
+
+  // 2. ETA Calculation API (Mocked dynamically based on current user coords)
+  app.post("/api/tracking/:orderId/eta", verifyToken, async (req, res) => {
+    const { lat, lng, destLat, destLng } = req.body;
+    // Mock ETA and distance
+    const distanceKm = +(Math.random() * 10 + 1).toFixed(1);
+    const etaMins = Math.floor(distanceKm * 4); // roughly 4 mins per km in traffic
+    res.json({ success: true, etaMins, distanceKm });
+  });
+
+  // 3. Get Route History (Location timeline for map rendering)
+  app.get("/api/tracking/:orderId/history", verifyToken, async (req, res) => {
+    try {
+      const db = admin.firestore();
+      const snapshot = await db.collection("orders").doc(req.params.orderId)
+                               .collection("tracking_history")
+                               .orderBy("timestamp", "asc").limit(50).get();
+                               
+      const history = snapshot.docs.map(doc => {
+         const data = doc.data();
+         // handle firestore timestamp conversion
+         const timestamp = data.timestamp?.toDate ? data.timestamp.toDate().toISOString() : new Date().toISOString();
+         return { id: doc.id, ...data, timestamp };
+      });
+
+      res.json({ success: true, history });
+    } catch(err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: "Failed to fetch tracking history" });
+    }
+  });
+
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -194,7 +279,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }

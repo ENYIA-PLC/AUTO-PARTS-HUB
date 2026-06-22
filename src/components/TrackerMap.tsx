@@ -1,12 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import { Map, Package, MapPin, Truck, CheckCircle2, Crosshair, Search } from 'lucide-react';
+import { Map, Package, MapPin, Truck, CheckCircle2, Crosshair, Search, Key } from 'lucide-react';
 import { motion } from 'motion/react';
 import { TrackOrderModal } from './TrackOrderModal';
+import { io } from 'socket.io-client';
+import { APIProvider, Map as GMap, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+
+const API_KEY =
+  process.env.GOOGLE_MAPS_PLATFORM_KEY ||
+  (import.meta as any).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
+  (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
+  '';
+const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY' && API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY';
 
 export const TrackerMap = () => {
     const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
     const [findingLocation, setFindingLocation] = useState(false);
     const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
+    
+    // Live backend tracking data state
+    const [liveData, setLiveData] = useState<{
+        courierLocation: {lat: number, lng: number} | null,
+        etaMins: number | null,
+        status: string
+    }>({ courierLocation: null, etaMins: null, status: 'In Transit' });
+
+    useEffect(() => {
+        // Initialize WebSocket connection for live Geolocation updates
+        const socket = io();
+
+        socket.on("connect", () => {
+            console.log("Connected to live tracking socket");
+            // Join specific simulated order tracking room
+            socket.emit("join-tracking", "PH-99214"); 
+        });
+
+        socket.on("location_update", (data: any) => {
+            console.log("Received live tracker broadcast:", data);
+            setLiveData(prev => ({
+                ...prev,
+                courierLocation: { lat: data.lat, lng: data.lng },
+                etaMins: data.etaMins,
+                status: data.status
+            }));
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, []);
 
     const handleLocateMe = () => {
         setFindingLocation(true);
@@ -28,6 +69,10 @@ export const TrackerMap = () => {
             setFindingLocation(false);
         }
     };
+
+    // Simulated default positions if no live data
+    const defaultCourierLocation = liveData.courierLocation || { lat: 8.8, lng: 7.3 }; // roughly center Nigeria
+    const destinationLocation = userLocation || { lat: 9.076, lng: 7.398 }; // Abuja
 
     return (
         <div className="w-full max-w-4xl mx-auto px-4 py-8">
@@ -59,58 +104,46 @@ export const TrackerMap = () => {
             </div>
 
             <div className="bg-white dark:bg-[#141414] border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden p-1">
-                {/* Simulated Map Area */}
+                {/* Map Area */}
                 <div className="relative h-80 bg-zinc-100 dark:bg-zinc-900 rounded-2xl overflow-hidden inset-ring-1 inset-ring-zinc-800">
-                    {/* Map Grid Pattern */}
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_2px,transparent_0)] bg-[length:40px_40px]" />
-                    
-                    {/* Route Line */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-                        <path 
-                            d="M 20 80 Q 40 40 80 20" 
-                            fill="none" 
-                            stroke="rgba(245, 158, 11, 0.2)" 
-                            strokeWidth="1" 
-                            strokeDasharray="2,2" 
-                        />
-                        <motion.path 
-                            d="M 20 80 Q 40 40 80 20" 
-                            fill="none" 
-                            stroke="rgba(245, 158, 11, 1)" 
-                            strokeWidth="0.5" 
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: userLocation ? 0.85 : 0.6 }}
-                            transition={{ duration: 2, ease: "easeInOut" }}
-                        />
-                    </svg>
-
-                    {/* Origin point */}
-                    <div className="absolute left-[20%] top-[80%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                        <div className="w-4 h-4 bg-zinc-700 rounded-full border-2 border-zinc-200 dark:border-zinc-900 z-10" />
-                        <span className="text-[10px] text-zinc-500 font-bold uppercase mt-1 bg-zinc-100/50 dark:bg-zinc-900/50 px-2 py-0.5 rounded backdrop-blur-sm">Lagos Hub</span>
-                    </div>
-
-                    {/* Destination point (Dynamic based on geoloc) */}
-                    <div className="absolute left-[80%] top-[20%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                        <div className={`w-4 h-4 rounded-full border-2 border-white dark:border-zinc-900 z-10 ${userLocation ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-zinc-700'}`} />
-                        <span className="text-[10px] text-zinc-500 font-bold uppercase mt-1 bg-zinc-100/50 dark:bg-zinc-900/50 px-2 py-0.5 rounded text-center backdrop-blur-sm">
-                            {userLocation ? `Your Location\n(${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)})` : 'Abuja Auto Shop'}
-                        </span>
-                    </div>
-
-                    {/* Moving Truck */}
-                    <motion.div 
-                        className="absolute w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-black z-20 shadow-[0_0_20px_rgba(245,158,11,0.5)]"
-                        initial={{ left: '20%', top: '80%' }}
-                        animate={{ 
-                            left: userLocation ? '74%' : '56%', 
-                            top: userLocation ? '26%' : '44%' 
-                        }}
-                        transition={{ duration: 2, ease: "easeInOut" }}
-                        style={{ transform: 'translate(-50%, -50%)' }}
-                    >
-                        <Truck className="w-4 h-4" />
-                    </motion.div>
+                    {!hasValidKey ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-900 text-center p-6">
+                            <Key className="w-8 h-8 text-amber-500 mb-4" />
+                            <h2 className="text-lg font-bold text-black dark:text-white mb-2">Google Maps API Key Required</h2>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 max-w-sm">
+                                To view the live tracking map, please add your Google Maps Platform API key in the AI Studio Secrets panel.
+                            </p>
+                            <ul className="text-left text-xs text-zinc-500 space-y-1 bg-white dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 w-full max-w-sm">
+                                <li>1. Open <strong>Settings</strong> (⚙️ gear icon, top-right)</li>
+                                <li>2. Select <strong>Secrets</strong></li>
+                                <li>3. Type <code>GOOGLE_MAPS_PLATFORM_KEY</code> and paste key</li>
+                            </ul>
+                        </div>
+                    ) : (
+                        <APIProvider apiKey={API_KEY} version="weekly">
+                            <GMap
+                                defaultCenter={defaultCourierLocation}
+                                defaultZoom={6}
+                                mapId="LIVE_TRACKING_MAP"
+                                internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                                style={{ width: '100%', height: '100%' }}
+                            >
+                                {/* Courier Marker */}
+                                <AdvancedMarker position={defaultCourierLocation} title="Courier Location">
+                                    <Pin background="#f59e0b" borderColor="#b45309" glyphColor="#000">
+                                        <Truck className="w-4 h-4" />
+                                    </Pin>
+                                </AdvancedMarker>
+                                
+                                {/* Destination / User Location Marker */}
+                                <AdvancedMarker position={destinationLocation} title="Destination">
+                                    <Pin background="#10b981" borderColor="#047857" glyphColor="#fff">
+                                        <Crosshair className="w-4 h-4" />
+                                    </Pin>
+                                </AdvancedMarker>
+                            </GMap>
+                        </APIProvider>
+                    )}
                 </div>
 
                 {/* Status Timeline */}
@@ -118,11 +151,13 @@ export const TrackerMap = () => {
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Order #PH-99214</h2>
-                            <p className="text-sm text-zinc-500">Shipped via DHL (Phase 3 Integration Planned)</p>
+                            <p className="text-sm text-zinc-500">Live Backend Status: {liveData.status}</p>
                         </div>
                         <div className="text-right">
                             <div className="text-xl font-black text-amber-500">{userLocation ? 'Approaching' : 'In Transit'}</div>
-                            <p className="text-sm text-zinc-500">{userLocation ? 'Estimated delivery: Within 30 mins' : 'Estimated delivery: Today, 4:00 PM'}</p>
+                            <p className="text-sm text-zinc-500">
+                                {liveData.etaMins ? `Real-time ETA: ${liveData.etaMins} mins` : (userLocation ? 'Estimated delivery: Within 30 mins' : 'Estimated delivery: Today, 4:00 PM')}
+                            </p>
                         </div>
                     </div>
 
