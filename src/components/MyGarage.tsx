@@ -286,7 +286,7 @@ export const MyGarage = () => {
                             </div>
 
                             {((vehicle.images && vehicle.images.length > 0) || (vehicle.videos && vehicle.videos.length > 0)) && (
-                                <div className="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                                <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide">
                                     {(vehicle.images || []).map((img, i) => (
                                         <div key={`img-${i}`} className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 cursor-pointer" onClick={() => setSelectedVehicleForMedia(vehicle)}>
                                             <img src={img} className="w-full h-full object-cover" />
