@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Map, Package, MapPin, Truck, CheckCircle2, Crosshair, Search, Key } from 'lucide-react';
 import { motion } from 'motion/react';
 import { TrackOrderModal } from './TrackOrderModal';
 import { io } from 'socket.io-client';
-import { APIProvider, Map as GMap, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { APIProvider, Map as GMap, AdvancedMarker, Pin, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 
 const API_KEY =
   process.env.GOOGLE_MAPS_PLATFORM_KEY ||
@@ -11,6 +11,43 @@ const API_KEY =
   (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
   '';
 const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY' && API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY';
+
+function RouteDisplay({ origin, destination }: {
+  origin: google.maps.LatLngLiteral;
+  destination: google.maps.LatLngLiteral;
+}) {
+  const map = useMap();
+  const routesLib = useMapsLibrary('routes');
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
+
+  useEffect(() => {
+    if (!routesLib || !map) return;
+    
+    // Clear previous route
+    polylinesRef.current.forEach(p => p.setMap(null));
+
+    routesLib.Route.computeRoutes({
+      origin: { location: { latLng: origin } },
+      destination: { location: { latLng: destination } },
+      travelMode: 'DRIVING',
+      routingPreference: 'TRAFFIC_AWARE',
+      fields: ['path', 'distanceMeters', 'durationMillis', 'viewport'],
+    }).then(({ routes }) => {
+      if (routes?.[0]) {
+        const newPolylines = routes[0].createPolylines();
+        newPolylines.forEach(p => {
+          p.setOptions({ strokeColor: '#f59e0b', strokeOpacity: 0.8, strokeWeight: 5 });
+          p.setMap(map);
+        });
+        polylinesRef.current = newPolylines;
+      }
+    }).catch(err => console.error("Route computing failed:", err));
+
+    return () => polylinesRef.current.forEach(p => p.setMap(null));
+  }, [routesLib, map, origin, destination]);
+
+  return null;
+}
 
 export const TrackerMap = () => {
     const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -128,6 +165,8 @@ export const TrackerMap = () => {
                                 internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
                                 style={{ width: '100%', height: '100%' }}
                             >
+                                <RouteDisplay origin={defaultCourierLocation} destination={destinationLocation} />
+                                
                                 {/* Courier Marker */}
                                 <AdvancedMarker position={defaultCourierLocation} title="Courier Location">
                                     <Pin background="#f59e0b" borderColor="#b45309" glyphColor="#000">

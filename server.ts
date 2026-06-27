@@ -53,11 +53,52 @@ async function startServer() {
   const io = new Server(server, { cors: { origin: "*" } });
 
   io.on("connection", (socket) => {
+    let simInterval: NodeJS.Timeout | null = null;
+
     socket.on("join-tracking", (trackingId) => {
       socket.join(`tracking_${trackingId}`);
       console.log(`Socket ${socket.id} joined tracking room: tracking_${trackingId}`);
+      
+      // Stop any existing simulation for this socket
+      if (simInterval) clearInterval(simInterval);
+      
+      // Start a mock simulation loop for demo purposes
+      let step = 0;
+      const startLoc = { lat: 8.8, lng: 7.3 }; // Example start
+      const destLoc = { lat: 9.076, lng: 7.398 }; // Example destination (Abuja)
+      const totalSteps = 20;
+
+      simInterval = setInterval(() => {
+        step++;
+        if (step > totalSteps) step = totalSteps;
+        
+        const progress = step / totalSteps;
+        // Simple linear interpolation
+        const currentLat = startLoc.lat + (destLoc.lat - startLoc.lat) * progress;
+        const currentLng = startLoc.lng + (destLoc.lng - startLoc.lng) * progress;
+        
+        const etaMins = Math.max(0, 45 - Math.floor((45 * progress)));
+        
+        const payload = {
+          lat: currentLat,
+          lng: currentLng,
+          speed: 45 + Math.floor(Math.random() * 15), // Random speed 45-60
+          status: step === totalSteps ? 'Delivered' : 'In Transit',
+          etaMins,
+          timestamp: new Date().toISOString()
+        };
+        
+        socket.emit("location_update", payload);
+        
+        if (step === totalSteps) {
+            clearInterval(simInterval!);
+        }
+      }, 4000); // update every 4 seconds
     });
-    socket.on("disconnect", () => {});
+
+    socket.on("disconnect", () => {
+        if (simInterval) clearInterval(simInterval);
+    });
   });
 
   const PORT = 3000;
