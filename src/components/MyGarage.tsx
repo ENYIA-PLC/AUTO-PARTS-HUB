@@ -3,6 +3,8 @@ import { Car, Plus, Trash2, CheckCircle2, Search, Cog, Navigation, Image } from 
 import { motion, AnimatePresence } from 'motion/react';
 import { VehicleTrackerModal } from './VehicleTrackerModal';
 import { VehicleMediaModal } from './VehicleMediaModal';
+import { MaintenanceModal } from './MaintenanceModal';
+import { RecallsModal } from './RecallsModal';
 import { useAuth } from '../AuthContext';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
@@ -24,6 +26,10 @@ export const MyGarage = () => {
     const { user } = useAuth();
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [isAdding, setIsAdding] = useState(false);
+    const [lookupMode, setLookupMode] = useState<'manual' | 'vin'>('manual');
+    const [vinLookupValue, setVinLookupValue] = useState('');
+    const [isLookingUpVin, setIsLookingUpVin] = useState(false);
+    const [vinError, setVinError] = useState('');
     
     const [newVehicle, setNewVehicle] = useState({
         year: '',
@@ -35,6 +41,8 @@ export const MyGarage = () => {
 
     const [selectedVehicleToTrack, setSelectedVehicleToTrack] = useState<Vehicle | null>(null);
     const [selectedVehicleForMedia, setSelectedVehicleForMedia] = useState<Vehicle | null>(null);
+    const [selectedVehicleForMaintenance, setSelectedVehicleForMaintenance] = useState<Vehicle | null>(null);
+    const [selectedVehicleForRecalls, setSelectedVehicleForRecalls] = useState<Vehicle | null>(null);
     const { t } = useLanguage();
 
     useEffect(() => {
@@ -59,6 +67,35 @@ export const MyGarage = () => {
 
         return () => unsubscribe();
     }, [user]);
+
+    const handleVinLookup = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!vinLookupValue || vinLookupValue.length < 10) {
+            setVinError("Please enter a valid VIN (min 10 chars).");
+            return;
+        }
+        setIsLookingUpVin(true);
+        setVinError('');
+
+        try {
+            // Mock API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Mock decoded data (in a real app, you would call an external API like NHTSA)
+            setNewVehicle({
+                year: '2023',
+                make: 'Toyota',
+                model: 'Camry',
+                trim: 'XSE',
+                engine: '2.5L 4-Cylinder'
+            });
+            setLookupMode('manual'); // switch back to show populated form
+        } catch (error) {
+            setVinError("Failed to decode VIN. Please try manual entry.");
+        } finally {
+            setIsLookingUpVin(false);
+        }
+    };
 
     const handleAddVehicle = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,73 +182,132 @@ export const MyGarage = () => {
                         exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                         className="overflow-hidden"
                     >
-                        <form onSubmit={handleAddVehicle} className="bg-zinc-50 dark:bg-[#141414] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8">
+                        <div className="bg-zinc-50 dark:bg-[#141414] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8">
                             <h3 className="text-xl font-bold text-black dark:text-white mb-6 flex items-center gap-2">
-                                <Cog className="w-5 h-5 text-amber-500" /> Vehicle Details
+                                <Cog className="w-5 h-5 text-amber-500" /> {t('addVehicle')}
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Year *</label>
-                                    <input 
-                                        type="number"
-                                        min="1990"
-                                        max={new Date().getFullYear() + 1}
-                                        value={newVehicle.year}
-                                        onChange={e => setNewVehicle({...newVehicle, year: e.target.value})}
-                                        className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
-                                        placeholder="e.g. 2019"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Make *</label>
-                                    <input 
-                                        type="text"
-                                        value={newVehicle.make}
-                                        onChange={e => setNewVehicle({...newVehicle, make: e.target.value})}
-                                        className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
-                                        placeholder="e.g. Honda"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Model *</label>
-                                    <input 
-                                        type="text"
-                                        value={newVehicle.model}
-                                        onChange={e => setNewVehicle({...newVehicle, model: e.target.value})}
-                                        className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
-                                        placeholder="e.g. Civic"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Trim (Optional)</label>
-                                    <input 
-                                        type="text"
-                                        value={newVehicle.trim}
-                                        onChange={e => setNewVehicle({...newVehicle, trim: e.target.value})}
-                                        className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
-                                        placeholder="e.g. EX"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Engine (Optional)</label>
-                                    <input 
-                                        type="text"
-                                        value={newVehicle.engine}
-                                        onChange={e => setNewVehicle({...newVehicle, engine: e.target.value})}
-                                        className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
-                                        placeholder="e.g. 1.5L Turbo"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end">
-                                <button type="submit" className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl transition-colors shadow-lg shadow-amber-500/20">
-                                    Save Vehicle
+
+                            <div className="flex gap-4 mb-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setLookupMode('manual')}
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${lookupMode === 'manual' ? 'bg-amber-500 text-black' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}`}
+                                >
+                                    Manual Entry
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setLookupMode('vin')}
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${lookupMode === 'vin' ? 'bg-amber-500 text-black' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}`}
+                                >
+                                    VIN Lookup
                                 </button>
                             </div>
-                        </form>
+
+                            {lookupMode === 'manual' ? (
+                                <form onSubmit={handleAddVehicle}>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Year *</label>
+                                            <input 
+                                                type="number"
+                                                min="1990"
+                                                max={new Date().getFullYear() + 1}
+                                                value={newVehicle.year}
+                                                onChange={e => setNewVehicle({...newVehicle, year: e.target.value})}
+                                                className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
+                                                placeholder="e.g. 2019"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Make *</label>
+                                            <input 
+                                                type="text"
+                                                value={newVehicle.make}
+                                                onChange={e => setNewVehicle({...newVehicle, make: e.target.value})}
+                                                className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
+                                                placeholder="e.g. Honda"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Model *</label>
+                                            <input 
+                                                type="text"
+                                                value={newVehicle.model}
+                                                onChange={e => setNewVehicle({...newVehicle, model: e.target.value})}
+                                                className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
+                                                placeholder="e.g. Civic"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Trim (Optional)</label>
+                                            <input 
+                                                type="text"
+                                                value={newVehicle.trim}
+                                                onChange={e => setNewVehicle({...newVehicle, trim: e.target.value})}
+                                                className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
+                                                placeholder="e.g. EX"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Engine (Optional)</label>
+                                            <input 
+                                                type="text"
+                                                value={newVehicle.engine}
+                                                onChange={e => setNewVehicle({...newVehicle, engine: e.target.value})}
+                                                className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white"
+                                                placeholder="e.g. 1.5L Turbo"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button type="submit" className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl transition-colors shadow-lg shadow-amber-500/20">
+                                            Save Vehicle
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleVinLookup}>
+                                    <div className="mb-6 max-w-lg">
+                                        <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Vehicle Identification Number (VIN)</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="text"
+                                                value={vinLookupValue}
+                                                onChange={e => setVinLookupValue(e.target.value.toUpperCase())}
+                                                className="w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-amber-500 transition-colors text-black dark:text-white uppercase"
+                                                placeholder="Enter 17-digit VIN"
+                                                required
+                                            />
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                                        </div>
+                                        {vinError && <p className="text-red-500 text-sm mt-2 font-medium">{vinError}</p>}
+                                        <p className="text-sm text-zinc-500 mt-2">
+                                            Your 17-character VIN can typically be found on your dashboard or driver's side door jamb.
+                                        </p>
+                                    </div>
+                                    <div className="flex justify-start">
+                                        <button 
+                                            type="submit" 
+                                            disabled={isLookingUpVin || !vinLookupValue}
+                                            className="px-8 py-3 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black disabled:opacity-50 font-bold rounded-xl transition-colors flex items-center gap-2"
+                                        >
+                                            {isLookingUpVin ? (
+                                                <>
+                                                    <span className="w-5 h-5 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin"></span>
+                                                    Decoding...
+                                                </>
+                                            ) : (
+                                                'Decode VIN'
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -325,10 +421,27 @@ export const MyGarage = () => {
                                         Shop Parts <Search className="w-3 h-3" />
                                     </button>
                                 </div>
-                                <div className={`flex justify-end pt-3 border-t ${vehicle.isPrimary ? 'border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'} gap-2`}>
+                                <div className={`flex flex-col gap-2 pt-3 border-t ${vehicle.isPrimary ? 'border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => setSelectedVehicleForMaintenance(vehicle)}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors"
+                                        >
+                                            <Cog className="w-3.5 h-3.5 text-blue-500" />
+                                            Maintenance
+                                        </button>
+                                        <button 
+                                            onClick={() => setSelectedVehicleForRecalls(vehicle)}
+                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors relative"
+                                        >
+                                            <Search className="w-3.5 h-3.5 text-red-500" />
+                                            Recalls
+                                            {vehicle.year === '2023' && <span className="absolute top-1.5 right-2 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
+                                        </button>
+                                    </div>
                                     <button 
                                         onClick={() => setSelectedVehicleToTrack(vehicle)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors"
+                                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors"
                                     >
                                         <Navigation className="w-3.5 h-3.5 text-emerald-500" />
                                         Live GPS Track
@@ -344,6 +457,19 @@ export const MyGarage = () => {
                 isOpen={!!selectedVehicleToTrack} 
                 onClose={() => setSelectedVehicleToTrack(null)} 
                 vehicleName={selectedVehicleToTrack ? `${selectedVehicleToTrack.year} ${selectedVehicleToTrack.make} ${selectedVehicleToTrack.model}` : ''}
+            />
+
+            <MaintenanceModal 
+                isOpen={!!selectedVehicleForMaintenance} 
+                onClose={() => setSelectedVehicleForMaintenance(null)} 
+                vehicleName={selectedVehicleForMaintenance ? `${selectedVehicleForMaintenance.year} ${selectedVehicleForMaintenance.make} ${selectedVehicleForMaintenance.model}` : ''}
+            />
+
+            <RecallsModal 
+                isOpen={!!selectedVehicleForRecalls} 
+                onClose={() => setSelectedVehicleForRecalls(null)} 
+                vehicleName={selectedVehicleForRecalls ? `${selectedVehicleForRecalls.year} ${selectedVehicleForRecalls.make} ${selectedVehicleForRecalls.model}` : ''}
+                hasRecalls={selectedVehicleForRecalls?.year === '2023'}
             />
 
             <VehicleMediaModal
