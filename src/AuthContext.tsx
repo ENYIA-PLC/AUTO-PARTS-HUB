@@ -81,8 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cachedAccessToken = credential.accessToken;
         setAccessToken(cachedAccessToken);
       }
-    } catch (error) {
-      console.error("Error signing in with Google", error);
+    } catch (error: any) {
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error("Error signing in with Google", error);
+      }
       throw error;
     } finally {
       isSigningIn = false;

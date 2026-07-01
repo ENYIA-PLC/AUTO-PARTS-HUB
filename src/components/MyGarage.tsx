@@ -492,6 +492,7 @@ export const MyGarage = () => {
                 isOpen={!!selectedVehicleForCMRIS} 
                 onClose={() => setSelectedVehicleForCMRIS(null)} 
                 vehicleName={selectedVehicleForCMRIS ? (selectedVehicleForCMRIS.id === 'general' ? 'General Registry Portal' : `${selectedVehicleForCMRIS.year} ${selectedVehicleForCMRIS.make} ${selectedVehicleForCMRIS.model}`.trim()) : ''}
+                vehicleId={selectedVehicleForCMRIS?.id}
             />
 
             <VehicleMediaModal

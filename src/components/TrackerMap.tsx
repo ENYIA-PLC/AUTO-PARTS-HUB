@@ -27,8 +27,8 @@ function RouteDisplay({ origin, destination }: {
     polylinesRef.current.forEach(p => p.setMap(null));
 
     routesLib.Route.computeRoutes({
-      origin: { location: { latLng: origin } },
-      destination: { location: { latLng: destination } },
+      origin: { location: { lat: origin.lat, lng: origin.lng } },
+      destination: { location: { lat: destination.lat, lng: destination.lng } },
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
       fields: ['path', 'distanceMeters', 'durationMillis', 'viewport'],

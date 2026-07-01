@@ -73,7 +73,13 @@ export const Mailbox = () => {
                     To access your buyer messages and order updates directly from PartsHub, please sign in and grant Gmail access.
                 </p>
                 <button 
-                     onClick={signInWithGoogle}
+                     onClick={async () => {
+                         try {
+                             await signInWithGoogle();
+                         } catch (error: any) {
+                             // Ignore popup closed errors
+                         }
+                     }}
                      className="px-6 py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-amber-500 rounded-xl font-bold text-zinc-900 dark:text-white flex items-center gap-3 transition-colors shadow-sm"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">

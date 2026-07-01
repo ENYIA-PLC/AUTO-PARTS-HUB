@@ -1,7 +1,9 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import fs from "fs";
 import { Server } from "socket.io";
 import * as http from "http";
@@ -18,8 +20,8 @@ try {
   const config = configStr ? JSON.parse(configStr) : null;
   const projectId = config?.projectId || process.env.FIREBASE_PROJECT_ID || "platinum-scout-qf4nj";
   
-  if (admin.apps.length === 0) {
-    admin.initializeApp({
+  if (getApps().length === 0) {
+    initializeApp({
       projectId: projectId,
     });
   }
@@ -38,7 +40,7 @@ const verifyToken = async (req: express.Request, res: express.Response, next: ex
 
   const idToken = authHeader.split("Bearer ")[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await getAuth().verifyIdToken(idToken);
     (req as any).user = decodedToken;
     next();
   } catch (error) {
@@ -115,7 +117,7 @@ async function startServer() {
   // Get all products
   app.get("/api/products", async (req, res) => {
     try {
-      const db = admin.firestore();
+      const db = getFirestore();
       const snapshot = await db.collection("products").get();
       const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       res.json({ success: true, products });
@@ -128,7 +130,7 @@ async function startServer() {
   // Get product by ID
   app.get("/api/products/:id", async (req, res) => {
     try {
-      const db = admin.firestore();
+      const db = getFirestore();
       const doc = await db.collection("products").doc(req.params.id).get();
       if (!doc.exists) {
         res.status(404).json({ success: false, error: "Product not found" });
@@ -144,13 +146,13 @@ async function startServer() {
   // Add a new product (Secure route)
   app.post("/api/products", verifyToken, async (req, res) => {
     try {
-      const db = admin.firestore();
+      const db = getFirestore();
       const user = (req as any).user;
       
       const newProduct = {
         ...req.body,
         sellerId: user.uid,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       };
       
       const docRef = await db.collection("products").add(newProduct);
@@ -164,7 +166,7 @@ async function startServer() {
   // Create a new order (Secure route)
   app.post("/api/orders", verifyToken, async (req, res) => {
     try {
-      const db = admin.firestore();
+      const db = getFirestore();
       const user = (req as any).user;
       
       const { items, total, shippingAddress } = req.body;
@@ -180,7 +182,7 @@ async function startServer() {
         total,
         shippingAddress,
         status: "Processing",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       };
       
       const docRef = await db.collection("orders").add(newOrder);
@@ -194,7 +196,7 @@ async function startServer() {
   // Get user's orders (Secure route)
   app.get("/api/orders", verifyToken, async (req, res) => {
     try {
-      const db = admin.firestore();
+      const db = getFirestore();
       const user = (req as any).user;
       
       const snapshot = await db.collection("orders")
@@ -239,7 +241,7 @@ async function startServer() {
     try {
       const { orderId } = req.params;
       const { lat, lng, speed, status } = req.body;
-      const db = admin.firestore();
+      const db = getFirestore();
 
       // Simple mock ETA calculation. Real app would use Google Maps Routes API.
       const etaMins = Math.max(1, Math.floor(Math.random() * 20) + 5); 
@@ -250,7 +252,7 @@ async function startServer() {
         speed: speed || 0, 
         status: status || 'In Transit', 
         etaMins, 
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: FieldValue.serverTimestamp()
       };
 
       // Ensure tracking document exists and is updated
@@ -284,7 +286,7 @@ async function startServer() {
   // 3. Get Route History (Location timeline for map rendering)
   app.get("/api/tracking/:orderId/history", verifyToken, async (req, res) => {
     try {
-      const db = admin.firestore();
+      const db = getFirestore();
       const snapshot = await db.collection("orders").doc(req.params.orderId)
                                .collection("tracking_history")
                                .orderBy("timestamp", "asc").limit(50).get();

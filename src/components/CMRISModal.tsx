@@ -1,15 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Shield, ExternalLink, CheckCircle2, AlertTriangle, FileText, Upload } from 'lucide-react';
+import { useAuth } from '../AuthContext';
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface CMRISModalProps {
     isOpen: boolean;
     onClose: () => void;
     vehicleName: string;
+    vehicleId?: string;
 }
 
-export const CMRISModal: React.FC<CMRISModalProps> = ({ isOpen, onClose, vehicleName }) => {
+export const CMRISModal: React.FC<CMRISModalProps> = ({ isOpen, onClose, vehicleName, vehicleId }) => {
+    const { user } = useAuth();
     const [status, setStatus] = useState<'unregistered' | 'pending' | 'registered'>('unregistered');
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            if (isOpen && user && vehicleId && vehicleId !== 'general') {
+                try {
+                    const docRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        setStatus(data.cmrisStatus || 'unregistered');
+                    }
+                } catch (error) {
+                    console.error("Error fetching CMRIS status:", error);
+                }
+            } else if (isOpen) {
+                setStatus('unregistered'); // Default for general portal
+            }
+        };
+        fetchStatus();
+    }, [isOpen, user, vehicleId]);
+
+    const handleUpload = async () => {
+        setStatus('pending');
+        if (user && vehicleId && vehicleId !== 'general') {
+            try {
+                const docRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
+                await updateDoc(docRef, { cmrisStatus: 'pending' });
+            } catch (error) {
+                console.error("Error updating CMRIS status:", error);
+            }
+        }
+    };
+
+    const handleVerify = async () => {
+        setIsLoading(true);
+        try {
+            // Live Integration Call could go here
+            // e.g., await fetch('/api/cmris/verify', { method: 'POST' });
+            
+            setStatus('registered');
+            if (user && vehicleId && vehicleId !== 'general') {
+                const docRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
+                await updateDoc(docRef, { cmrisStatus: 'registered' });
+            }
+        } catch (error) {
+            console.error("Error verifying CMRIS status:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -89,7 +145,7 @@ export const CMRISModal: React.FC<CMRISModalProps> = ({ isOpen, onClose, vehicle
                                         </p>
                                         <div className="flex gap-3">
                                             <button 
-                                                onClick={() => setStatus('pending')}
+                                                onClick={handleUpload}
                                                 className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-black text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
                                             >
                                                 <Upload className="w-4 h-4" /> Upload Certificate
@@ -106,10 +162,11 @@ export const CMRISModal: React.FC<CMRISModalProps> = ({ isOpen, onClose, vehicle
                                             Your uploaded certificate is currently being verified. This usually takes up to 24 hours.
                                         </p>
                                         <button 
-                                            onClick={() => setStatus('registered')}
-                                            className="text-xs text-amber-600 hover:underline"
+                                            onClick={handleVerify}
+                                            disabled={isLoading}
+                                            className="text-xs text-amber-600 hover:underline disabled:opacity-50"
                                         >
-                                            Simulate Verification Complete
+                                            {isLoading ? 'Verifying...' : 'Verify via NPF API'}
                                         </button>
                                     </div>
                                 )}

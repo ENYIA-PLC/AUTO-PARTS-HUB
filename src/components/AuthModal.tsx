@@ -35,8 +35,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             await signInWithGoogle();
             onClose();
         } catch (error: any) {
-            console.error('Failed to sign in', error);
-            setErrorMsg(error.message || 'Failed to sign in securely.');
+            if (error.code !== 'auth/popup-closed-by-user') {
+                console.error('Failed to sign in', error);
+                setErrorMsg(error.message || 'Failed to sign in securely.');
+            }
         } finally {
             setIsProcessing(false);
         }
