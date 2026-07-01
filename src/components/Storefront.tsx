@@ -116,8 +116,8 @@ export const Storefront = () => {
                 </motion.div>
             )}
 
-            {/* Sticky Search & Category Filter */}
-            <div className="sticky top-16 z-40 bg-zinc-50 dark:bg-[#0a0a0a] pt-4 pb-4 border-b border-zinc-200/50 dark:border-zinc-800/50 mb-8 max-w-7xl mx-auto backdrop-blur-xl bg-opacity-90 dark:bg-opacity-90">
+            {/* Search & Category Filter */}
+            <div className="z-40 bg-zinc-50 dark:bg-[#0a0a0a] pt-4 pb-4 border-b border-zinc-200/50 dark:border-zinc-800/50 mb-8 max-w-7xl mx-auto backdrop-blur-xl bg-opacity-90 dark:bg-opacity-90">
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />

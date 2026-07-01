@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Plus, Trash2, CheckCircle2, Search, Cog, Navigation, Image } from 'lucide-react';
+import { Car, Plus, Trash2, CheckCircle2, Search, Cog, Navigation, Image, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VehicleTrackerModal } from './VehicleTrackerModal';
 import { VehicleMediaModal } from './VehicleMediaModal';
 import { MaintenanceModal } from './MaintenanceModal';
 import { RecallsModal } from './RecallsModal';
+import { CMRISModal } from './CMRISModal';
 import { useAuth } from '../AuthContext';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
@@ -43,6 +44,7 @@ export const MyGarage = () => {
     const [selectedVehicleForMedia, setSelectedVehicleForMedia] = useState<Vehicle | null>(null);
     const [selectedVehicleForMaintenance, setSelectedVehicleForMaintenance] = useState<Vehicle | null>(null);
     const [selectedVehicleForRecalls, setSelectedVehicleForRecalls] = useState<Vehicle | null>(null);
+    const [selectedVehicleForCMRIS, setSelectedVehicleForCMRIS] = useState<Vehicle | null>(null);
     const { t } = useLanguage();
 
     useEffect(() => {
@@ -160,9 +162,16 @@ export const MyGarage = () => {
                         </span>
                         {t('myGarage')}
                     </h1>
-                    <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl text-lg">
+                    <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl text-lg mb-6">
                         {t('manageVehicles')}
                     </p>
+                    <button 
+                        onClick={() => setSelectedVehicleForCMRIS({ year: '', make: 'General Registration', model: '', id: 'general', isPrimary: false })}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-500 rounded-lg text-sm font-bold transition-colors border border-green-500/20"
+                    >
+                        <Shield className="w-4 h-4" />
+                        Police CMRIS Portal
+                    </button>
                 </div>
                 
                 <button 
@@ -422,21 +431,28 @@ export const MyGarage = () => {
                                     </button>
                                 </div>
                                 <div className={`flex flex-col gap-2 pt-3 border-t ${vehicle.isPrimary ? 'border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
-                                    <div className="flex gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <button 
                                             onClick={() => setSelectedVehicleForMaintenance(vehicle)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors"
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors"
                                         >
                                             <Cog className="w-3.5 h-3.5 text-blue-500" />
-                                            Maintenance
+                                            <span className="truncate">Maintenance</span>
                                         </button>
                                         <button 
                                             onClick={() => setSelectedVehicleForRecalls(vehicle)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors relative"
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors relative"
                                         >
                                             <Search className="w-3.5 h-3.5 text-red-500" />
-                                            Recalls
+                                            <span className="truncate">Recalls</span>
                                             {vehicle.year === '2023' && <span className="absolute top-1.5 right-2 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
+                                        </button>
+                                        <button 
+                                            onClick={() => setSelectedVehicleForCMRIS(vehicle)}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 text-black dark:text-white transition-colors relative"
+                                        >
+                                            <Shield className="w-3.5 h-3.5 text-green-500" />
+                                            <span className="truncate">CMRIS</span>
                                         </button>
                                     </div>
                                     <button 
@@ -470,6 +486,12 @@ export const MyGarage = () => {
                 onClose={() => setSelectedVehicleForRecalls(null)} 
                 vehicleName={selectedVehicleForRecalls ? `${selectedVehicleForRecalls.year} ${selectedVehicleForRecalls.make} ${selectedVehicleForRecalls.model}` : ''}
                 hasRecalls={selectedVehicleForRecalls?.year === '2023'}
+            />
+
+            <CMRISModal 
+                isOpen={!!selectedVehicleForCMRIS} 
+                onClose={() => setSelectedVehicleForCMRIS(null)} 
+                vehicleName={selectedVehicleForCMRIS ? (selectedVehicleForCMRIS.id === 'general' ? 'General Registry Portal' : `${selectedVehicleForCMRIS.year} ${selectedVehicleForCMRIS.make} ${selectedVehicleForCMRIS.model}`.trim()) : ''}
             />
 
             <VehicleMediaModal
