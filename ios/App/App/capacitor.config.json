@@ -1,5 +1,6 @@
 {
 	"appId": "com.example.app",
 	"appName": "PartsHub",
-	"webDir": "dist"
+	"webDir": "dist",
+	"packageClassList": []
 }

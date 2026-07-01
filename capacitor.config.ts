@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.partshub.app',
+  appId: 'com.example.app',
   appName: 'PartsHub',
   webDir: 'dist'
 };
